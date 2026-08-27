@@ -10,13 +10,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Build APK with Buildozer Container
+      - name: Build APK with Buildozer
         uses: ArtemSBulgakov/buildozer-action@v1.2.0
         with:
-          command: buildozer init && sed -i 's/title = My Application/title = Hope Terrazzo/' buildozer.spec && sed -i 's/package.name = myapp/package.name = hopeterrazzo/' buildozer.spec && sed -i 's/requirements = python3,kivy/requirements = python3,kivy/' buildozer.spec && buildozer android debug
+          command: buildozer android debug
           buildozer_version: stable
 
       - name: Upload APK Artifact
