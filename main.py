@@ -1,4 +1,5 @@
 import sqlite3
+import os
 from datetime import datetime
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
@@ -13,43 +14,42 @@ from kivy.metrics import dp, sp
 from kivy.core.window import Window
 from kivy.graphics import Color, Rectangle, Line
 
-# Classic desktop light-grey background
+# Set app background color
 Window.clearcolor = (0.91, 0.92, 0.94, 1)
 
 class DesktopCard(BoxLayout):
-    """Card container replicating the desktop UI frame with border."""
+    """Card container with background and border."""
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         with self.canvas.before:
-            Color(1, 1, 1, 1)  # White box background
+            Color(1, 1, 1, 1)
             self.rect = Rectangle(pos=self.pos, size=self.size)
-            Color(0.75, 0.78, 0.82, 1)  # Border color
-            self.border = Line(rect=(self.x, self.y, self.width, self.height), width=1)
+            Color(0.75, 0.78, 0.82, 1)
+            self.border = Line(rectangle=(self.x, self.y, self.width, self.height), width=1)
         self.bind(pos=self._update_graphics, size=self._update_graphics)
 
     def _update_graphics(self, instance, value):
         self.rect.pos = self.pos
         self.rect.size = self.size
-        self.border.rect = (self.x, self.y, self.width, self.height)
+        self.border.rectangle = (self.x, self.y, self.width, self.height)
 
 class HopeTerrazzoApp(App):
     def build(self):
         self.init_db()
         
-        # Root vertical layout
         root = BoxLayout(orientation='vertical', padding=dp(8), spacing=dp(6))
         
-        # 1. Top Title Header (Dark Slate Bar)
+        # Top Header Bar
         header = BoxLayout(size_hint_y=None, height=dp(48), padding=[dp(10), 0])
         with header.canvas.before:
-            Color(0.22, 0.25, 0.30, 1)  # Dark slate
-            Rectangle(pos=header.pos, size=header.size)
-        header.bind(pos=lambda inst, val: setattr(header.canvas.before.children[1], 'pos', header.pos),
-                    size=lambda inst, val: setattr(header.canvas.before.children[1], 'size', header.size))
+            Color(0.22, 0.25, 0.30, 1)
+            self.header_bg = Rectangle(pos=header.pos, size=header.size)
+        header.bind(pos=lambda inst, val: setattr(self.header_bg, 'pos', header.pos),
+                    size=lambda inst, val: setattr(self.header_bg, 'size', header.size))
         
         header_title = Label(
             text="HOPE TERRAZZO INVENTORY & SALES",
-            font_size=sp(15),
+            font_size=sp(14),
             bold=True,
             color=(1, 1, 1, 1),
             halign='center',
@@ -59,21 +59,20 @@ class HopeTerrazzoApp(App):
         header.add_widget(header_title)
         root.add_widget(header)
 
-        # 2. Navigation Tab Bar
+        # Tab Bar
         self.tab_bar = BoxLayout(size_hint_y=None, height=dp(38), spacing=dp(2))
         
-        self.btn_tab_sale = Button(text="Record Sale", font_size=sp(12), bold=True, on_press=lambda x: self.switch_tab('sale'))
-        self.btn_tab_stock = Button(text="Add Stock", font_size=sp(12), bold=True, on_press=lambda x: self.switch_tab('stock'))
-        self.btn_tab_view = Button(text="View Inventory", font_size=sp(12), bold=True, on_press=lambda x: self.switch_tab('inventory'))
-        self.btn_tab_report = Button(text="Sales & Profit Report", font_size=sp(11), bold=True, on_press=lambda x: self.switch_tab('report'))
+        self.btn_tab_sale = Button(text="Record Sale", font_size=sp(11), bold=True, on_press=lambda x: self.switch_tab('sale'))
+        self.btn_tab_stock = Button(text="Add Stock", font_size=sp(11), bold=True, on_press=lambda x: self.switch_tab('stock'))
+        self.btn_tab_view = Button(text="View Inventory", font_size=sp(10), bold=True, on_press=lambda x: self.switch_tab('inventory'))
+        self.btn_tab_report = Button(text="Sales & Report", font_size=sp(10), bold=True, on_press=lambda x: self.switch_tab('report'))
 
         for btn in [self.btn_tab_sale, self.btn_tab_stock, self.btn_tab_view, self.btn_tab_report]:
             self.tab_bar.add_widget(btn)
         root.add_widget(self.tab_bar)
 
-        # 3. Screen Manager for Tab Content
+        # Tab Content Manager
         self.sm = ScreenManager()
-        
         self.sm.add_widget(self.create_sale_screen())
         self.sm.add_widget(self.create_stock_screen())
         self.sm.add_widget(self.create_inventory_screen())
@@ -82,6 +81,10 @@ class HopeTerrazzoApp(App):
         root.add_widget(self.sm)
         self.switch_tab('sale')
         return root
+
+    def get_db_path(self):
+        """Returns safe internal app data storage path for Android."""
+        return os.path.join(self.user_data_dir, "terrazzo.db")
 
     def set_tab_colors(self, active_tab):
         tabs = {
@@ -93,11 +96,11 @@ class HopeTerrazzoApp(App):
         for key, btn in tabs.items():
             if key == active_tab:
                 btn.background_normal = ''
-                btn.background_color = (0.35, 0.42, 0.50, 1)  # Active tab dark grey
+                btn.background_color = (0.35, 0.42, 0.50, 1)
                 btn.color = (1, 1, 1, 1)
             else:
                 btn.background_normal = ''
-                btn.background_color = (0.82, 0.85, 0.88, 1)  # Inactive light grey
+                btn.background_color = (0.82, 0.85, 0.88, 1)
                 btn.color = (0.2, 0.2, 0.2, 1)
 
     def switch_tab(self, tab_name):
@@ -109,10 +112,9 @@ class HopeTerrazzoApp(App):
         self.refresh_spinners()
         self.sm.current = tab_name
 
-    # --- TAB 1: RECORD SALE ---
     def create_sale_screen(self):
         screen = Screen(name='sale')
-        card = DesktopCard(orientation='vertical', padding=dp(16), spacing=dp(14), size_hint=(1, 1))
+        card = DesktopCard(orientation='vertical', padding=dp(16), spacing=dp(12), size_hint=(1, 1))
         
         card.add_widget(Label(
             text="Record Daily Transaction",
@@ -121,15 +123,15 @@ class HopeTerrazzoApp(App):
         ))
         
         grid = GridLayout(cols=2, spacing=dp(10), size_hint_y=None, height=dp(90))
-        grid.add_widget(Label(text="Select Product:", font_size=sp(13), color=(0.1, 0.1, 0.1, 1), halign='left'))
+        grid.add_widget(Label(text="Select Product:", font_size=sp(12), color=(0.1, 0.1, 0.1, 1), halign='left'))
         
         self.sale_spinner = Spinner(
             text='Select Product...', values=self.get_product_options(),
-            size_hint_y=None, height=dp(38), font_size=sp(12)
+            size_hint_y=None, height=dp(38), font_size=sp(11)
         )
         grid.add_widget(self.sale_spinner)
 
-        grid.add_widget(Label(text="Quantity Sold:", font_size=sp(13), color=(0.1, 0.1, 0.1, 1), halign='left'))
+        grid.add_widget(Label(text="Quantity Sold:", font_size=sp(12), color=(0.1, 0.1, 0.1, 1), halign='left'))
         self.sale_qty_input = TextInput(
             input_filter='int', multiline=False, size_hint_y=None, height=dp(38), font_size=sp(13)
         )
@@ -137,7 +139,7 @@ class HopeTerrazzoApp(App):
         card.add_widget(grid)
 
         btn_sale = Button(
-            text="Record Sale", font_size=sp(13), bold=True,
+            text="Record Sale", font_size=sp(12), bold=True,
             size_hint=(None, None), size=(dp(130), dp(36)), pos_hint={'center_x': 0.5},
             background_normal='', background_color=(0.25, 0.50, 0.85, 1), color=(1, 1, 1, 1),
             on_press=self.record_sale
@@ -149,10 +151,9 @@ class HopeTerrazzoApp(App):
         screen.add_widget(card)
         return screen
 
-    # --- TAB 2: ADD STOCK ---
     def create_stock_screen(self):
         screen = Screen(name='stock')
-        card = DesktopCard(orientation='vertical', padding=dp(16), spacing=dp(14), size_hint=(1, 1))
+        card = DesktopCard(orientation='vertical', padding=dp(16), spacing=dp(12), size_hint=(1, 1))
         
         card.add_widget(Label(
             text="Add Inventory Stock",
@@ -161,15 +162,15 @@ class HopeTerrazzoApp(App):
         ))
         
         grid = GridLayout(cols=2, spacing=dp(10), size_hint_y=None, height=dp(90))
-        grid.add_widget(Label(text="Select Product:", font_size=sp(13), color=(0.1, 0.1, 0.1, 1), halign='left'))
+        grid.add_widget(Label(text="Select Product:", font_size=sp(12), color=(0.1, 0.1, 0.1, 1), halign='left'))
         
         self.stock_spinner = Spinner(
             text='Select Product...', values=self.get_product_options(),
-            size_hint_y=None, height=dp(38), font_size=sp(12)
+            size_hint_y=None, height=dp(38), font_size=sp(11)
         )
         grid.add_widget(self.stock_spinner)
 
-        grid.add_widget(Label(text="Quantity to Add:", font_size=sp(13), color=(0.1, 0.1, 0.1, 1), halign='left'))
+        grid.add_widget(Label(text="Quantity to Add:", font_size=sp(12), color=(0.1, 0.1, 0.1, 1), halign='left'))
         self.stock_qty_input = TextInput(
             input_filter='int', multiline=False, size_hint_y=None, height=dp(38), font_size=sp(13)
         )
@@ -177,7 +178,7 @@ class HopeTerrazzoApp(App):
         card.add_widget(grid)
 
         btn_stock = Button(
-            text="Add Stock", font_size=sp(13), bold=True,
+            text="Add Stock", font_size=sp(12), bold=True,
             size_hint=(None, None), size=(dp(130), dp(36)), pos_hint={'center_x': 0.5},
             background_normal='', background_color=(0.20, 0.60, 0.35, 1), color=(1, 1, 1, 1),
             on_press=self.add_stock
@@ -189,7 +190,6 @@ class HopeTerrazzoApp(App):
         screen.add_widget(card)
         return screen
 
-    # --- TAB 3: VIEW INVENTORY ---
     def create_inventory_screen(self):
         screen = Screen(name='inventory')
         card = DesktopCard(orientation='vertical', padding=dp(12), spacing=dp(8), size_hint=(1, 1))
@@ -208,7 +208,6 @@ class HopeTerrazzoApp(App):
         screen.add_widget(card)
         return screen
 
-    # --- TAB 4: SALES & PROFIT REPORT ---
     def create_report_screen(self):
         screen = Screen(name='report')
         card = DesktopCard(orientation='vertical', padding=dp(12), spacing=dp(8), size_hint=(1, 1))
@@ -227,9 +226,8 @@ class HopeTerrazzoApp(App):
         screen.add_widget(card)
         return screen
 
-    # --- DATABASE OPERATIONS ---
     def init_db(self):
-        conn = sqlite3.connect("terrazzo.db")
+        conn = sqlite3.connect(self.get_db_path())
         cursor = conn.cursor()
         cursor.execute('''CREATE TABLE IF NOT EXISTS products 
                           (id INTEGER PRIMARY KEY, name TEXT UNIQUE, buying_price REAL, selling_price REAL, stock INTEGER)''')
@@ -247,7 +245,7 @@ class HopeTerrazzoApp(App):
         conn.close()
 
     def get_product_options(self):
-        conn = sqlite3.connect("terrazzo.db")
+        conn = sqlite3.connect(self.get_db_path())
         cursor = conn.cursor()
         cursor.execute("SELECT id, name, stock FROM products")
         rows = cursor.fetchall()
@@ -267,7 +265,7 @@ class HopeTerrazzoApp(App):
         prod_id = int(prod_text.split(" - ")[0])
         qty = int(qty_text)
         
-        conn = sqlite3.connect("terrazzo.db")
+        conn = sqlite3.connect(self.get_db_path())
         cursor = conn.cursor()
         cursor.execute("SELECT name, buying_price, selling_price, stock FROM products WHERE id=?", (prod_id,))
         item = cursor.fetchone()
@@ -299,7 +297,7 @@ class HopeTerrazzoApp(App):
         prod_id = int(prod_text.split(" - ")[0])
         qty = int(qty_text)
         
-        conn = sqlite3.connect("terrazzo.db")
+        conn = sqlite3.connect(self.get_db_path())
         cursor = conn.cursor()
         cursor.execute("UPDATE products SET stock = stock + ? WHERE id=?", (qty, prod_id))
         conn.commit()
@@ -313,9 +311,9 @@ class HopeTerrazzoApp(App):
         self.inventory_grid.clear_widgets()
         headers = ["ID", "Product Name", "Price (KES)", "Stock"]
         for h in headers:
-            self.inventory_grid.add_widget(Label(text=h, bold=True, font_size=sp(12), color=(0.1, 0.1, 0.1, 1), size_hint_y=None, height=dp(28)))
+            self.inventory_grid.add_widget(Label(text=h, bold=True, font_size=sp(11), color=(0.1, 0.1, 0.1, 1), size_hint_y=None, height=dp(28)))
             
-        conn = sqlite3.connect("terrazzo.db")
+        conn = sqlite3.connect(self.get_db_path())
         cursor = conn.cursor()
         cursor.execute("SELECT id, name, selling_price, stock FROM products")
         for r in cursor.fetchall():
@@ -329,9 +327,9 @@ class HopeTerrazzoApp(App):
         self.report_grid.clear_widgets()
         headers = ["Date", "Product", "Qty", "Profit (KES)"]
         for h in headers:
-            self.report_grid.add_widget(Label(text=h, bold=True, font_size=sp(12), color=(0.1, 0.1, 0.1, 1), size_hint_y=None, height=dp(28)))
+            self.report_grid.add_widget(Label(text=h, bold=True, font_size=sp(11), color=(0.1, 0.1, 0.1, 1), size_hint_y=None, height=dp(28)))
             
-        conn = sqlite3.connect("terrazzo.db")
+        conn = sqlite3.connect(self.get_db_path())
         cursor = conn.cursor()
         cursor.execute("SELECT date, product_name, quantity, profit FROM sales ORDER BY id DESC")
         for r in cursor.fetchall():
