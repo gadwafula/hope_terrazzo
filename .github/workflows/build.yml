@@ -1,0 +1,26 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Build APK with Buildozer Container
+        uses: ArtemSBulgakov/buildozer-action@v1.2.0
+        with:
+          command: buildozer init && sed -i 's/title = My Application/title = Hope Terrazzo/' buildozer.spec && sed -i 's/package.name = myapp/package.name = hopeterrazzo/' buildozer.spec && sed -i 's/requirements = python3,kivy/requirements = python3,kivy/' buildozer.spec && buildozer android debug
+          buildozer_version: stable
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Hope-Terrazzo-APK
+          path: bin/*.apk
