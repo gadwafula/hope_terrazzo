@@ -42,3 +42,8 @@ log_level = 2
 
 # Display warning if buildozer is run as root
 warn_on_root = 1
+# (str) Presplash image filename
+package.presplash.filename = %(source.dir)s/presplash.jpg
+
+# (str) Presplash background color (Deep Forest Green matching the banner)
+android.presplash_color = #0A2218
