@@ -11,17 +11,18 @@ from kivy.uix.button import Button
 from kivy.uix.spinner import Spinner
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.uix.image import Image
+from kivy.clock import Clock
 from kivy.metrics import dp, sp
 from kivy.core.window import Window
 from kivy.graphics import Color, RoundedRectangle, Rectangle, Line
 
-# Branding Color Palette
-# Primary Forest Green: #103B2B | Warm Gold: #C5A059 | Dark Emerald BG: #0D1F17
-Window.clearcolor = (0.05, 0.12, 0.09, 1)
+# Premium Color Palette: Midnight Charcoal BG, Forest Emerald Cards, Warm Gold Accents
+Window.clearcolor = (0.08, 0.10, 0.14, 1)
 
 class ModernCard(BoxLayout):
-    """Custom container card styled with deep forest green background and gold borders."""
-    def __init__(self, bg_color=(0.09, 0.26, 0.20, 1), border_color=(0.80, 0.65, 0.30, 0.5), **kwargs):
+    """Custom styled card container with subtle gold line border."""
+    def __init__(self, bg_color=(0.12, 0.16, 0.22, 1), border_color=(0.85, 0.72, 0.42, 0.5), **kwargs):
         super().__init__(**kwargs)
         self.bg_color = bg_color
         self.border_color = border_color
@@ -40,14 +41,15 @@ class ModernCard(BoxLayout):
 class HopeTerrazzoApp(App):
     def build(self):
         self.title = "Hope Terrazzo Solutions"
+        self.active_date_filter = None
         self.init_db()
         
         root = BoxLayout(orientation='vertical', padding=dp(8), spacing=dp(6))
         
-        # 1. Branding Header
+        # 1. Branding Header Bar
         header = BoxLayout(orientation='vertical', size_hint_y=None, height=dp(54), padding=[dp(10), dp(4)])
         with header.canvas.before:
-            Color(0.06, 0.22, 0.16, 1)
+            Color(0.06, 0.20, 0.15, 1)  # Deep Forest Green
             self.header_bg = Rectangle(pos=header.pos, size=header.size)
         header.bind(pos=lambda inst, val: setattr(self.header_bg, 'pos', header.pos),
                     size=lambda inst, val: setattr(self.header_bg, 'size', header.size))
@@ -56,7 +58,7 @@ class HopeTerrazzoApp(App):
             text="HOPE TERRAZZO SOLUTIONS",
             font_size=sp(14),
             bold=True,
-            color=(0.90, 0.78, 0.45, 1),
+            color=(0.92, 0.80, 0.48, 1),  # Champagne Gold
             halign='center',
             valign='middle'
         )
@@ -88,6 +90,7 @@ class HopeTerrazzoApp(App):
 
         # 3. Screen Manager
         self.sm = ScreenManager()
+        self.sm.add_widget(self.create_splash_screen())
         self.sm.add_widget(self.create_sale_screen())
         self.sm.add_widget(self.create_stock_screen())
         self.sm.add_widget(self.create_inventory_screen())
@@ -95,11 +98,34 @@ class HopeTerrazzoApp(App):
         self.sm.add_widget(self.create_report_screen())
 
         root.add_widget(self.sm)
-        self.switch_tab('sale')
+        
+        # Display splash image initially, transition to sale screen after 2.5s
+        self.sm.current = 'splash'
+        Clock.schedule_once(lambda dt: self.switch_tab('sale'), 2.5)
+        
         return root
 
     def get_db_path(self):
         return os.path.join(self.user_data_dir, "terrazzo.db")
+
+    # --- LOADING / SPLASH SCREEN ---
+    def create_splash_screen(self):
+        screen = Screen(name='splash')
+        box = BoxLayout(orientation='vertical', padding=dp(10))
+        
+        if os.path.exists('presplash.jpg'):
+            splash_img = Image(source='presplash.jpg', allow_stretch=True, keep_ratio=True)
+            box.add_widget(splash_img)
+        else:
+            card = ModernCard(orientation='vertical', padding=dp(20))
+            card.add_widget(Label(
+                text="HOPE TERRAZZO SOLUTIONS\nLoading Application...",
+                font_size=sp(16), bold=True, color=(0.92, 0.80, 0.48, 1), halign='center'
+            ))
+            box.add_widget(card)
+            
+        screen.add_widget(box)
+        return screen
 
     def set_tab_colors(self, active_tab):
         tabs = {
@@ -112,11 +138,11 @@ class HopeTerrazzoApp(App):
         for key, btn in tabs.items():
             if key == active_tab:
                 btn.background_normal = ''
-                btn.background_color = (0.80, 0.65, 0.30, 1)
-                btn.color = (0.05, 0.12, 0.09, 1)
+                btn.background_color = (0.85, 0.72, 0.42, 1)  # Warm Gold Active
+                btn.color = (0.08, 0.10, 0.14, 1)
             else:
                 btn.background_normal = ''
-                btn.background_color = (0.08, 0.22, 0.17, 1)
+                btn.background_color = (0.12, 0.16, 0.22, 1)  # Midnight Charcoal Inactive
                 btn.color = (0.80, 0.88, 0.85, 1)
 
     def switch_tab(self, tab_name):
@@ -135,7 +161,7 @@ class HopeTerrazzoApp(App):
         
         card.add_widget(Label(
             text="Record Sales Transaction", font_size=sp(13), bold=True,
-            color=(0.90, 0.78, 0.45, 1), size_hint_y=None, height=dp(25)
+            color=(0.92, 0.80, 0.48, 1), size_hint_y=None, height=dp(25)
         ))
         
         grid = GridLayout(cols=2, spacing=dp(8), size_hint_y=None, height=dp(85))
@@ -144,7 +170,7 @@ class HopeTerrazzoApp(App):
         self.sale_spinner = Spinner(
             text='Select Material...', values=self.get_product_options(),
             size_hint_y=None, height=dp(36), font_size=sp(11),
-            background_normal='', background_color=(0.12, 0.32, 0.24, 1), color=(1, 1, 1, 1)
+            background_normal='', background_color=(0.16, 0.22, 0.30, 1), color=(1, 1, 1, 1)
         )
         grid.add_widget(self.sale_spinner)
 
@@ -158,7 +184,7 @@ class HopeTerrazzoApp(App):
         btn_sale = Button(
             text="Record Sale", font_size=sp(12), bold=True,
             size_hint=(None, None), size=(dp(150), dp(38)), pos_hint={'center_x': 0.5},
-            background_normal='', background_color=(0.80, 0.65, 0.30, 1), color=(0.05, 0.12, 0.09, 1),
+            background_normal='', background_color=(0.85, 0.72, 0.42, 1), color=(0.08, 0.10, 0.14, 1),
             on_press=self.record_sale
         )
         card.add_widget(btn_sale)
@@ -175,7 +201,7 @@ class HopeTerrazzoApp(App):
         
         card.add_widget(Label(
             text="Add Material Inventory Stock", font_size=sp(13), bold=True,
-            color=(0.90, 0.78, 0.45, 1), size_hint_y=None, height=dp(25)
+            color=(0.92, 0.80, 0.48, 1), size_hint_y=None, height=dp(25)
         ))
         
         grid = GridLayout(cols=2, spacing=dp(8), size_hint_y=None, height=dp(85))
@@ -184,7 +210,7 @@ class HopeTerrazzoApp(App):
         self.stock_spinner = Spinner(
             text='Select Material...', values=self.get_product_options(),
             size_hint_y=None, height=dp(36), font_size=sp(11),
-            background_normal='', background_color=(0.12, 0.32, 0.24, 1), color=(1, 1, 1, 1)
+            background_normal='', background_color=(0.16, 0.22, 0.30, 1), color=(1, 1, 1, 1)
         )
         grid.add_widget(self.stock_spinner)
 
@@ -215,7 +241,7 @@ class HopeTerrazzoApp(App):
         
         card.add_widget(Label(
             text="Material Catalog & Stock Levels", font_size=sp(13), bold=True,
-            color=(0.90, 0.78, 0.45, 1), size_hint_y=None, height=dp(25)
+            color=(0.92, 0.80, 0.48, 1), size_hint_y=None, height=dp(25)
         ))
 
         scroll = ScrollView(size_hint=(1, 1))
@@ -234,11 +260,10 @@ class HopeTerrazzoApp(App):
         container = BoxLayout(orientation='vertical', spacing=dp(10), size_hint_y=None, padding=dp(2))
         container.bind(minimum_height=container.setter('height'))
 
-        # Card A: Add New Material
         card_add = ModernCard(orientation='vertical', padding=dp(12), spacing=dp(8), size_hint_y=None, height=dp(200))
         card_add.add_widget(Label(
             text="➕ Add New Terrazzo Material", font_size=sp(12), bold=True,
-            color=(0.90, 0.78, 0.45, 1), size_hint_y=None, height=dp(22)
+            color=(0.92, 0.80, 0.48, 1), size_hint_y=None, height=dp(22)
         ))
         
         grid_add = GridLayout(cols=2, spacing=dp(6), size_hint_y=None, height=dp(105))
@@ -263,11 +288,10 @@ class HopeTerrazzoApp(App):
         card_add.add_widget(btn_add)
         container.add_widget(card_add)
 
-        # Card B: Edit Prices
         card_edit = ModernCard(orientation='vertical', padding=dp(12), spacing=dp(8), size_hint_y=None, height=dp(210))
         card_edit.add_widget(Label(
             text="✏️ Edit Material Buying/Selling Prices", font_size=sp(12), bold=True,
-            color=(0.90, 0.78, 0.45, 1), size_hint_y=None, height=dp(22)
+            color=(0.92, 0.80, 0.48, 1), size_hint_y=None, height=dp(22)
         ))
 
         grid_edit = GridLayout(cols=2, spacing=dp(6), size_hint_y=None, height=dp(115))
@@ -275,7 +299,7 @@ class HopeTerrazzoApp(App):
         self.manage_spinner = Spinner(
             text='Select Material...', values=self.get_product_options(),
             size_hint_y=None, height=dp(34), font_size=sp(10),
-            background_normal='', background_color=(0.12, 0.32, 0.24, 1), color=(1, 1, 1, 1)
+            background_normal='', background_color=(0.16, 0.22, 0.30, 1), color=(1, 1, 1, 1)
         )
         grid_edit.add_widget(self.manage_spinner)
 
@@ -290,7 +314,7 @@ class HopeTerrazzoApp(App):
         card_edit.add_widget(grid_edit)
         btn_update = Button(
             text="Update Prices", font_size=sp(11), bold=True, size_hint_y=None, height=dp(32),
-            background_normal='', background_color=(0.80, 0.65, 0.30, 1), color=(0.05, 0.12, 0.09, 1),
+            background_normal='', background_color=(0.85, 0.72, 0.42, 1), color=(0.08, 0.10, 0.14, 1),
             on_press=self.update_product_prices
         )
         card_edit.add_widget(btn_update)
@@ -303,7 +327,7 @@ class HopeTerrazzoApp(App):
         screen.add_widget(scroll)
         return screen
 
-    # --- TAB 5: SALES REPORT & CSV EXPORT ---
+    # --- TAB 5: SALES REPORT & DATE FILTERING ---
     def create_report_screen(self):
         screen = Screen(name='report')
         card = ModernCard(orientation='vertical', padding=dp(10), spacing=dp(6), size_hint=(1, 1))
@@ -311,21 +335,51 @@ class HopeTerrazzoApp(App):
         # Summary Header Banner
         summary_box = BoxLayout(orientation='vertical', size_hint_y=None, height=dp(52), padding=[dp(8), dp(4)])
         with summary_box.canvas.before:
-            Color(0.06, 0.22, 0.16, 1)
+            Color(0.06, 0.20, 0.15, 1)
             self.sum_rect = RoundedRectangle(pos=summary_box.pos, size=summary_box.size, radius=[dp(6)])
         summary_box.bind(pos=lambda inst, val: setattr(self.sum_rect, 'pos', summary_box.pos),
                          size=lambda inst, val: setattr(self.sum_rect, 'size', summary_box.size))
 
         self.total_revenue_label = Label(text="Total Revenue: KES 0.00", font_size=sp(11), color=(0.85, 0.90, 0.88, 1))
-        self.total_profit_label = Label(text="TOTAL NET PROFIT: KES 0.00", font_size=sp(12), bold=True, color=(0.90, 0.78, 0.45, 1))
+        self.total_profit_label = Label(text="TOTAL NET PROFIT: KES 0.00", font_size=sp(12), bold=True, color=(0.92, 0.80, 0.48, 1))
         summary_box.add_widget(self.total_revenue_label)
         summary_box.add_widget(self.total_profit_label)
         card.add_widget(summary_box)
 
-        # Export Button Bar
-        export_bar = BoxLayout(size_hint_y=None, height=dp(34), spacing=dp(8))
+        # Date Filtering Tool Bar
+        filter_box = BoxLayout(size_hint_y=None, height=dp(34), spacing=dp(6))
+        
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        self.date_filter_input = TextInput(
+            text=today_str,
+            hint_text='YYYY-MM-DD',
+            multiline=False,
+            size_hint=(0.45, 1),
+            font_size=sp(11),
+            padding=[dp(6), dp(8)]
+        )
+        
+        btn_filter_date = Button(
+            text="Filter Date", font_size=sp(10), bold=True,
+            background_normal='', background_color=(0.85, 0.72, 0.42, 1), color=(0.08, 0.10, 0.14, 1),
+            on_press=lambda x: self.refresh_report_table(filter_date=self.date_filter_input.text.strip())
+        )
+        
+        btn_show_all = Button(
+            text="Show All", font_size=sp(10), bold=True,
+            background_normal='', background_color=(0.16, 0.22, 0.30, 1), color=(0.85, 0.90, 0.88, 1),
+            on_press=lambda x: self.refresh_report_table(filter_date=None)
+        )
+        
+        filter_box.add_widget(self.date_filter_input)
+        filter_box.add_widget(btn_filter_date)
+        filter_box.add_widget(btn_show_all)
+        card.add_widget(filter_box)
+
+        # Export CSV Button Bar
+        export_bar = BoxLayout(size_hint_y=None, height=dp(32), spacing=dp(6))
         btn_export = Button(
-            text="📄 Export CSV Report", font_size=sp(11), bold=True,
+            text="📄 Export Report CSV", font_size=sp(10), bold=True,
             background_normal='', background_color=(0.15, 0.50, 0.38, 1), color=(1, 1, 1, 1),
             on_press=self.export_sales_to_csv
         )
@@ -352,7 +406,6 @@ class HopeTerrazzoApp(App):
             cursor.execute('''CREATE TABLE IF NOT EXISTS sales 
                               (id INTEGER PRIMARY KEY, product_name TEXT, quantity INTEGER, total_cost REAL, total_revenue REAL, profit REAL, date TEXT)''')
             
-            # Pre-populate products including 1/4 and 3/16 varieties
             catalog = [
                 ("Black Terrazzo (1/4)", 265.0, 400.0),
                 ("Black Terrazzo (3/16)", 265.0, 400.0),
@@ -395,7 +448,7 @@ class HopeTerrazzoApp(App):
             buy_p = float(buy_text)
             sell_p = float(sell_text)
             if buy_p < 0 or sell_p < 0:
-                self.manage_log.text = "⚠️️ Prices cannot be negative."
+                self.manage_log.text = "⚠ Prices cannot be negative."
                 return
 
             with sqlite3.connect(self.get_db_path()) as conn:
@@ -438,7 +491,7 @@ class HopeTerrazzoApp(App):
             self.edit_sell_input.text = ""
             self.refresh_spinners()
         except ValueError:
-            self.manage_log.text = "⚠️️ Invalid numeric entry."
+            self.manage_log.text = "⚠ Invalid numeric entry."
 
     def record_sale(self, instance):
         prod_text, qty_text = self.sale_spinner.text, self.sale_qty_input.text
@@ -509,7 +562,7 @@ class HopeTerrazzoApp(App):
         self.inventory_grid.clear_widgets()
         headers = ["ID", "Material", "Buy (KES)", "Sell (KES)", "Stock"]
         for h in headers:
-            self.inventory_grid.add_widget(Label(text=h, bold=True, font_size=sp(10), color=(0.90, 0.78, 0.45, 1), size_hint_y=None, height=dp(26)))
+            self.inventory_grid.add_widget(Label(text=h, bold=True, font_size=sp(10), color=(0.92, 0.80, 0.48, 1), size_hint_y=None, height=dp(26)))
             
         with sqlite3.connect(self.get_db_path()) as conn:
             cursor = conn.cursor()
@@ -521,24 +574,37 @@ class HopeTerrazzoApp(App):
                 self.inventory_grid.add_widget(Label(text=f"{r[3]:,.0f}", font_size=sp(10), color=(0.85, 0.9, 0.88, 1), size_hint_y=None, height=dp(24)))
                 self.inventory_grid.add_widget(Label(text=str(r[4]), font_size=sp(10), color=(0.85, 0.9, 0.88, 1), size_hint_y=None, height=dp(24)))
 
-    def refresh_report_table(self):
+    def refresh_report_table(self, filter_date=None):
+        self.active_date_filter = filter_date
         self.report_grid.clear_widgets()
         headers = ["Date", "Material", "Qty", "Profit (KES)"]
         for h in headers:
-            self.report_grid.add_widget(Label(text=h, bold=True, font_size=sp(10), color=(0.90, 0.78, 0.45, 1), size_hint_y=None, height=dp(26)))
+            self.report_grid.add_widget(Label(text=h, bold=True, font_size=sp(10), color=(0.92, 0.80, 0.48, 1), size_hint_y=None, height=dp(26)))
             
         with sqlite3.connect(self.get_db_path()) as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT SUM(total_revenue), SUM(profit) FROM sales")
-            totals = cursor.fetchone()
-            tot_rev = totals[0] if totals[0] is not None else 0.0
-            tot_prof = totals[1] if totals[1] is not None else 0.0
             
-            self.total_revenue_label.text = f"Total Revenue: KES {tot_rev:,.2f}"
-            self.total_profit_label.text = f"TOTAL NET PROFIT: KES {tot_prof:,.2f}"
+            if filter_date:
+                # Query metrics for specific date string YYYY-MM-DD
+                cursor.execute("SELECT SUM(total_revenue), SUM(profit) FROM sales WHERE date LIKE ?", (f"{filter_date}%",))
+                totals = cursor.fetchone()
+                cursor.execute("SELECT date, product_name, quantity, profit FROM sales WHERE date LIKE ? ORDER BY id DESC", (f"{filter_date}%",))
+                rows = cursor.fetchall()
+            else:
+                # Query all-time metrics
+                cursor.execute("SELECT SUM(total_revenue), SUM(profit) FROM sales")
+                totals = cursor.fetchone()
+                cursor.execute("SELECT date, product_name, quantity, profit FROM sales ORDER BY id DESC")
+                rows = cursor.fetchall()
 
-            cursor.execute("SELECT date, product_name, quantity, profit FROM sales ORDER BY id DESC")
-            for r in cursor.fetchall():
+            tot_rev = totals[0] if totals and totals[0] is not None else 0.0
+            tot_prof = totals[1] if totals and totals[1] is not None else 0.0
+            
+            date_prefix = f" [{filter_date}]" if filter_date else " [All Time]"
+            self.total_revenue_label.text = f"Total Revenue{date_prefix}: KES {tot_rev:,.2f}"
+            self.total_profit_label.text = f"TOTAL NET PROFIT{date_prefix}: KES {tot_prof:,.2f}"
+
+            for r in rows:
                 self.report_grid.add_widget(Label(text=str(r[0]), font_size=sp(9), color=(0.85, 0.9, 0.88, 1), size_hint_y=None, height=dp(24)))
                 self.report_grid.add_widget(Label(text=str(r[1]), font_size=sp(9), color=(0.85, 0.9, 0.88, 1), size_hint_y=None, height=dp(24)))
                 self.report_grid.add_widget(Label(text=str(r[2]), font_size=sp(9), color=(0.85, 0.9, 0.88, 1), size_hint_y=None, height=dp(24)))
@@ -549,7 +615,10 @@ class HopeTerrazzoApp(App):
         try:
             with sqlite3.connect(self.get_db_path()) as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT id, date, product_name, quantity, total_cost, total_revenue, profit FROM sales")
+                if self.active_date_filter:
+                    cursor.execute("SELECT id, date, product_name, quantity, total_cost, total_revenue, profit FROM sales WHERE date LIKE ?", (f"{self.active_date_filter}%",))
+                else:
+                    cursor.execute("SELECT id, date, product_name, quantity, total_cost, total_revenue, profit FROM sales")
                 rows = cursor.fetchall()
 
             with open(csv_file_path, mode='w', newline='', encoding='utf-8') as file:
